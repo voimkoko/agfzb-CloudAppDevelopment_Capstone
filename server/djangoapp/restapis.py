@@ -81,10 +81,17 @@ def get_dealer_reviews_from_cf(url, dealerId):
         # For each review object
         for review_doc in reviews:
             # Create a DealerReview object with values in `doc` object
-            review_obj = DealerReview(dealership=review_doc["dealership"], name=review_doc["name"], purchase=review_doc["purchase"],
-                                   id=review_doc["_id"], review=review_doc["review"], purchase_date=review_doc["purchase_date"],
-                                   car_make=review_doc["car_make"], car_model=review_doc["car_model"],
-                                   car_year=review_doc["car_year"], sentiment="")
+            try:
+                review_obj = DealerReview(dealership=review_doc["dealership"], name=review_doc["name"], purchase=review_doc["purchase"],
+                                    id=review_doc["_id"], review=review_doc["review"], purchase_date=review_doc["purchase_date"],
+                                    car_make=review_doc["car_make"], car_model=review_doc["car_model"],
+                                    car_year=review_doc["car_year"], sentiment="")
+            except KeyError:
+                review_obj = DealerReview(dealership=review_doc["dealership"], name=review_doc["name"], purchase=review_doc["purchase"],
+                                    id=review_doc["_id"], review=review_doc["review"], purchase_date="",
+                                    car_make="", car_model="",
+                                    car_year="", sentiment="")                
+
             review_obj.sentiment = analyze_review_sentiments(review_obj.review)
             results.append(review_obj)
 
