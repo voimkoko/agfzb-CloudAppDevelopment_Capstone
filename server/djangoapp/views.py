@@ -9,7 +9,7 @@ from django.contrib import messages
 from datetime import datetime
 import logging
 import json
-from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf
+from .restapis import get_dealers_from_cf, get_dealer_reviews_from_cf, post_request
 from .models import CarModel
 
 # Get an instance of a logger
@@ -46,12 +46,12 @@ def login_request(request):
         if user is not None:
             # If user is valid, call login method to login current user
             login(request, user)
-            return redirect('djangoapp/index.html')
+            return redirect("djangoapp:index")
         else:
             # If not, return to login page again
-            return render(request, 'djangoapp/index.html', context)
+            return render(request, "djangoapp:index", context)
     else:
-        return render(request, 'djangoapp/index.html', context)
+        return render(request, "djangoapp:index", context)
 
 # Create a `logout_request` view to handle sign out request
 # def logout_request(request):
@@ -61,7 +61,7 @@ def logout_request(request):
     # Logout user in the request
     logout(request)
     # Redirect user back to course list view
-    return redirect('djangoapp/index.html')
+    return redirect("djangoapp:index")
 
 # Create a `registration_request` view to handle sign up request
 # def registration_request(request):
@@ -98,11 +98,6 @@ def registration_request(request):
 
 # Update the `get_dealerships` view to render the index page with a list of dealerships
 def get_dealerships(request):
-    context = {}
-    if request.method == "GET":
-        return render(request, 'djangoapp/index.html', context)
-
-def get_dealerships(request):
     if request.method == "GET":
         url = "https://5e78cf3b.us-south.apigw.appdomain.cloud/api/dealership"
         # Get dealers from the URL
@@ -110,7 +105,9 @@ def get_dealerships(request):
         # Concat all dealer's short name
         dealer_names = ' '.join([dealer.short_name for dealer in dealerships])
         # Return a list of dealer short name
-        return HttpResponse(dealer_names)
+        context = {}
+        context['dealerships'] = dealerships
+        return render(request, 'djangoapp/index.html', context)
 
 # Create a `get_dealer_details` view to render the reviews of a dealer
 # def get_dealer_details(request, dealer_id):
@@ -120,8 +117,10 @@ def get_dealer_details(request, dealerId):
     reviews = get_dealer_reviews_from_cf(url, dealerId)
     # Concat all dealer's short name
     dealer_reviews = ' '.join([review.review+' '+review.sentiment for review in reviews])
-    # Return a list of dealer short name
-    return HttpResponse(dealer_reviews)
+    context = {}
+    context['dealer_id'] = dealerId
+    context['reviews'] = reviews
+    return render(request, 'djangoapp/dealer_details.html', context)
 
 # Create a `add_review` view to submit a review
 # def add_review(request, dealer_id):
@@ -149,7 +148,7 @@ def add_review(request, dealer_id):
         }
 
         if form.get("purchasecheck"):
-            review["purchase_date"] = datetime.strptime(form.get("purchase_date"), "%m/%d/%Y").isoformat()
+            review["purchase_date"] = datetime.strptime(form.get("purchasedate"), "%m/%d/%Y").isoformat()
             car = CarModel.objects.get(pk=form['car'])
             review["car_make"] = car.maker.name
             review["car_model"] = car.name
@@ -159,5 +158,5 @@ def add_review(request, dealer_id):
 
         json_result = post_request(url, {"review": review})
 
-        return redirect("djangoapp:dealer_details", dealer_id=dealer_id)
+        return redirect("djangoapp:dealer_details", dealerId=dealer_id)
 
